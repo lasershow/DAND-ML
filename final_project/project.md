@@ -13,3 +13,34 @@ Please think that you have become an audit team to deal with this problem. The d
 Also, do not miss the problem, can you inject a lot of resources?
 
 Machine learning solves these problems. Machine learning will find certain regularity from large amounts of data and identify cheaters. Also, you may discover something that people do not notice.z
+
+### From the viewpoint of datasets
+この理由をデータセットを見ながら考えましょう
+- 実際にデータ探索をする
+- その理由を答える
+
+
+### 外れ値の検出
+- 外れ値の処理をどうするか
+- なぜその処理を行ったか
+
+## 特徴選択
+- POIを調べる（ドメインから考えること？person of interst）
+- なぜその特徴を選択したか
+- 特徴量エンジニアリングを行う
+- 特徴選択機能を使用して、特徴選択を行う
+
+## アルゴリズム
+- 複数のアルゴリズムを使用する
+- 比較する
+
+### チューニング
+- 詳細に何を行ったかを記述する
+
+### 検証
+- 検証とは何か
+- 検証を行わないと何が起こるか
+
+### 評価
+-  2 evaluation metrics and your average performance for each of them.
+あなたのアルゴリズムの性能について人間が理解できる何かを示すメトリクスの解釈を説明してください

@@ -12,7 +12,6 @@ from tester import dump_classifier_and_data
 ### The first feature must be "poi".
 features_list = ['poi','salary'] # You will need to use more features
 
-### Task 1.5: Feature Engineering
 
 
 ### Load the dictionary containing the dataset
