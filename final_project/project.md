@@ -20,7 +20,10 @@ Machine learning solves these problems. Machine learning will find certain regul
 - その理由を答える
 
 
+----ここまで完了
+
 ### 外れ値の検出
+- ビデオで外れ値をどうしているか学ぶ
 - 外れ値の処理をどうするか
 - なぜその処理を行ったか
 
