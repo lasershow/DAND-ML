@@ -1,7 +1,9 @@
-## Datasets
+## なぜ異常値になるのだろうか?
+- センサーの故障
+- データ入力エラー
 
-### POI
-person of interest
+## どうやって処理するか
 
-
-## feature selection
+- 外れ値除去アルゴリズム
+- 学習して、取り除いて、再度学習
+- Residual Errors(一度の学習では取り除けない？)
