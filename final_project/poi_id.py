@@ -112,16 +112,20 @@ features_list_X = ['bonus','deferred_income','exercised_stock_options','expenses
 y = df['poi']
 X = df[features_list_X]
 
-Cs = [0.001, 0.01, 0.1, 1, 10]
-gammas = [0.001, 0.01, 0.1, 1]
-grid = {'C': Cs, 'gamma' : gammas}
+grid = {
+    'alpha': [0.0001,0.0002,0.001,0.01,0.1], # learning rate
+    'max_iter': [1000], # number of epochs
+    'loss': ['hinge' , 'squared_hinge'],
+    'penalty': ['l2'],
+    'n_jobs': [-1]
+}
 
 score = 'recall'
 gs = GridSearchCV(
-    SVC(), # classifier
-    grid, # parameters
+    linear_model.SGDClassifier(),
+    grid,
     cv=5,
-    scoring='%s_weighted' % score)
+    scoring='%s_weighted' % score )
 
 gs.fit(X,y)
 
