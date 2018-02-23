@@ -20,6 +20,7 @@ from sklearn.model_selection import GridSearchCV
 from sklearn.svm import SVC
 
 import pandas as pd
+import numpy as np
 
 ### Task 1: Select what features you'll use.
 ### features_list is a list of strings, each of which is a feature name.
@@ -77,6 +78,22 @@ df = df[df.exercised_stock_options < 3.0e+8 ]
 df = df[df.expenses < 5000000 ]
 df = df[df.salary < 2.0e+7 ]
 df = df[df.total_payments < 1.0e+8 ]
+
+X = df.drop(['email_address','poi'], axis=1)
+y = df['poi']
+
+from sklearn.ensemble import IsolationForest
+
+# fit the model
+clf = IsolationForest(n_estimators=100, max_samples=100)
+clf.fit(X)
+y_pred = clf.predict(X)
+# non_outlier 1, outlier -1
+non_outlier = 1
+predicted_index = np.where(y_pred == non_outlier)
+
+df = df.iloc[predicted_index]
+
 ### Task 3: Create new feature(s)
 fraction_from_poi =[]
 fraction_to_poi =[]
