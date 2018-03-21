@@ -18,6 +18,7 @@ from sklearn.linear_model import SGDClassifier
 from sklearn.metrics import roc_auc_score
 from sklearn.model_selection import GridSearchCV
 from sklearn.svm import SVC
+from sklearn.svm import LinearSVC
 
 import pandas as pd
 import numpy as np
@@ -129,17 +130,23 @@ features_list_X = ['bonus','deferred_income','exercised_stock_options','expenses
 y = df['poi']
 X = df[features_list_X]
 
+# SGD tuning
 grid = {
-    'alpha': [0.0001,0.0002,0.001,0.01,0.1], # learning rate
-    'max_iter': [1000], # number of epochs
-    'loss': ['hinge' , 'squared_hinge'],
-    'penalty': ['l2'],
-    'n_jobs': [-1]
+#     'alpha': [0.0001,0.0002,0.001,0.01,0.1], # learning rate
+#     'n_iter': [1000], # number of epochs
+#     'loss': ['hinge' , 'squared_hinge'],
+#     'penalty': ['l2'],
+#     'n_jobs': [-1]
+}
+
+from sklearn.neighbors import KNeighborsClassifier
+grid = {
+    'n_neighbors': [1,2,3,4,5]
 }
 
 score = 'recall'
 gs = GridSearchCV(
-    linear_model.SGDClassifier(),
+    KNeighborsClassifier(),
     grid,
     cv=5,
     scoring='%s_weighted' % score )
