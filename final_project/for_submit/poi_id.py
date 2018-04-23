@@ -10,7 +10,7 @@ from tester import dump_classifier_and_data
 # Machine Learning
 from sklearn.datasets import load_boston
 from sklearn.feature_selection import RFE
-from sklearn.ensemble import RandomForestRegressor
+from sklearn.ensemble import RandomForestClassifier
 from sklearn import preprocessing
 from sklearn import svm, datasets, cross_validation
 from sklearn import linear_model
@@ -18,23 +18,40 @@ from sklearn.linear_model import SGDClassifier
 from sklearn.metrics import roc_auc_score
 from sklearn.model_selection import GridSearchCV
 from sklearn.svm import SVC
+from sklearn.svm import LinearSVC
+from sklearn.cross_validation import train_test_split
+from sklearn.metrics import accuracy_score, precision_score, recall_score
+from sklearn.feature_selection import SelectKBest
+from numpy import mean
 
 import pandas as pd
+import numpy as np
+import matplotlib.pyplot
 
 ### Task 1: Select what features you'll use.
 ### features_list is a list of strings, each of which is a feature name.
 ### The first feature must be "poi".
 # You will need to use more features
-features_list = ['poi','bonus','deferred_income','exercised_stock_options','expenses',
-                 'salary','total_payments','fraction_from_poi']
-
+features_list = ['poi', 'bonus', 'exercised_stock_options', 'from_messages', 'other', 'salary', 'total_payments', 'fraction_from_poi']
 
 
 ### Load the dictionary containing the dataset
 with open("final_project_dataset.pkl", "r") as data_file:
     data_dict = pickle.load(data_file)
 
+# Allocation across classes (POI/non-POI)
+poi = 0
+for person in data_dict:
+    if data_dict[person]['poi'] == True:
+       poi += 1
+print("Total number of poi: %i" % poi)
+print("Total number of non-poi: %i" % (len(data_dict) - poi))
+
+# Transpose
 df = pd.DataFrame(data_dict).T
+
+# total number of data points
+print("total number of data points: %i" % df.shape[0])
 
 # for missing value
 df = df.where(df != "NaN", -1)
@@ -71,12 +88,61 @@ for column in df:
         df[column] = df[column].fillna(df[column].mean())
 
 ### Task 2: Remove outliers
-df = df[df.bonus < 0.8e+8 ]
-df = df[df.deferred_income >  -0.5e+7 ]
-df = df[df.exercised_stock_options < 3.0e+8 ]
-df = df[df.expenses < 5000000 ]
-df = df[df.salary < 2.0e+7 ]
-df = df[df.total_payments < 1.0e+8 ]
+
+# plotOutliers
+def plotOutliers(data_set, feature_x, feature_y):
+    """
+    This function takes a dict, 2 strings, and shows a 2d plot of 2 features
+    """
+    matplotlib.pyplot.scatter(data_set[feature_x], data_set[feature_y])
+    matplotlib.pyplot.xlabel(feature_x)
+    matplotlib.pyplot.ylabel(feature_y)
+    matplotlib.pyplot.show()
+
+#Visualize data to identify outliers
+# print(plotOutliers(df, 'total_payments', 'total_stock_value'))
+# print(plotOutliers(df, 'from_poi_to_this_person', 'from_this_person_to_poi'))
+# print(plotOutliers(df, 'salary', 'bonus'))
+# print(plotOutliers(df, 'total_payments', 'other'))
+
+
+# ------
+# remove outliers by IsolationForest methods
+X = df.drop(['email_address','poi'], axis=1)
+y = df['poi']
+
+from sklearn.ensemble import IsolationForest
+
+clf = IsolationForest(n_estimators=100, max_samples=100)
+clf.fit(X)
+y_pred = clf.predict(X)
+# non_outlier 1, outlier -1
+non_outlier = 1
+predicted_index = np.where(y_pred == non_outlier)
+
+df = df.iloc[predicted_index]
+# end: remove outliers by IsolationForest methods
+# ------
+
+# remove outlier from visualize
+df = df[df.from_messages < 4000 ]
+df = df[df.exercised_stock_options < 1e7 ]
+df = df[df.deferred_income > -2000000 ]
+df = df[df.from_poi_to_this_person < 300 ]
+df = df[df.loan_advances > 3e7 ]
+df = df[df.restricted_stock_deferred > -100000 ]
+df = df[df.to_messages < 10000 ]
+df = df[df.restricted_stock < 0.6e7 ]
+
+# manual detect outlier
+df = df.drop("THE TRAVEL AGENCY IN THE PARK")
+
+# Visualize data after remove outliers
+# print(plotOutliers(df, 'total_payments', 'total_stock_value'))
+# print(plotOutliers(df, 'from_poi_to_this_person', 'from_this_person_to_poi'))
+# print(plotOutliers(df, 'salary', 'bonus'))
+# print(plotOutliers(df, 'total_payments', 'other'))
+
 ### Task 3: Create new feature(s)
 fraction_from_poi =[]
 fraction_to_poi =[]
@@ -86,6 +152,26 @@ for key, row in df.iterrows():
 
 df['fraction_from_poi'] = fraction_from_poi
 df['fraction_to_poi'] = fraction_to_poi
+
+"""
+I do feature selection, using domain knowledge.For example, email does not affect fraud.
+Furthermore, I selected features using RF importance.
+Results of RF importance My choice, fraction_from_poi, was chosen as important.
+
+`ex`
+
+y = df["poi"]
+X = df.drop("poi",axis=1)
+selector = RFE(RandomForestClassifier(n_estimators=100, random_state=42), n_features_to_select=7)
+selector.fit(X, y)
+print selector.support_
+print selector.ranking_
+
+X_selected = selector.transform(X)
+print "X.shape={}, X_selected.shape={}".format(X.shape, X_selected.shape)
+"""
+
+
 ### Store to my_dataset for easy export below.
 # data_dict = df.to_dict
 my_dataset = df.T.to_dict("dict")
@@ -107,42 +193,72 @@ labels, features = targetFeatureSplit(data)
 ### stratified shuffle split cross validation. For more info:
 ### http://scikit-learn.org/stable/modules/generated/sklearn.cross_validation.StratifiedShuffleSplit.html
 features_list_X = ['bonus','deferred_income','exercised_stock_options','expenses',
-                 'salary','total_payments','fraction_from_poi']
+                   'salary','total_payments','fraction_from_poi']
 
 y = df['poi']
 X = df[features_list_X]
 
+"""
+In machine learning, model validation is referred to as the process where a trained model is evaluated with a testing data set.
+The testing data set is a separate portion of the same data set from which the training set is derived.
+The main purpose of using the testing data set is to test the generalization ability of a trained model (Alpaydin 2010).
+
+Validating data is extremely important.
+The reason being is that at times data is not always perfect there can be imbalance within it which leads to skewed or biased results.
+"""
+
+### http://scikit-learn.org/stable/modules/pipeline.html
+def evaluate_clf(grid_search, features, labels, params, iters=100):
+    acc = []
+    pre = []
+    recall = []
+    for i in range(iters):
+        features_train, features_test, labels_train, labels_test = \
+        train_test_split(features, labels, test_size=0.3, random_state=i)
+        grid_search.fit(features_train, labels_train)
+        predictions = grid_search.predict(features_test)
+        acc = acc + [accuracy_score(labels_test, predictions)]
+        pre = pre + [precision_score(labels_test, predictions)]
+        recall = recall + [recall_score(labels_test, predictions)]
+    print "accuracy: {}".format(mean(acc))
+    print "precision: {}".format(mean(pre))
+    print "recall:    {}".format(mean(recall))
+    best_params = grid_search.best_estimator_.get_params()
+    for param_name in params.keys():
+        print("%s = %r, " % (param_name, best_params[param_name]))
+    return grid_search.best_estimator_
+
+from sklearn.neighbors import KNeighborsClassifier
 grid = {
-    'alpha': [0.0001,0.0002,0.001,0.01,0.1], # learning rate
-    'max_iter': [1000], # number of epochs
-    'loss': ['hinge' , 'squared_hinge'],
-    'penalty': ['l2'],
-    'n_jobs': [-1]
+    'n_neighbors': [1,2,3,4,5]
 }
 
-score = 'recall'
-gs = GridSearchCV(
-    linear_model.SGDClassifier(),
-    grid,
-    cv=5,
-    scoring='%s_weighted' % score )
-
-gs.fit(X,y)
-
-# Pass the best algorithm
-clf = gs.best_estimator_
+gs = GridSearchCV(KNeighborsClassifier(),grid)
+print("Evaluate KNeighborsClassifier model")
+clf = evaluate_clf(gs, features, labels, grid)
 
 
-print("# Tuning hyper-parameters for %s" % score)
-print()
-print("Best parameters set found on development set: %s" % gs.best_params_)
-print()
-print("Grid scores on development set:")
-print()
-for params, mean_score, scores in gs.grid_scores_:
-    print("%0.3f (+/-%0.03f) for %r"
-          % (mean_score, scores.std() * 2, params))
-print()
+from sklearn import naive_bayes
+nb_clf = naive_bayes.GaussianNB()
+nb_param = {}
+nb_grid_search = GridSearchCV(nb_clf, nb_param)
+
+print("Evaluate naive bayes model")
+clf = evaluate_clf(nb_grid_search, features, labels, nb_param)
+
+"""
+Evaluate KNeighborsClassifier model
+accuracy: 0.900512820513
+precision: 0.376
+recall:    0.22069047619
+n_neighbors = 5,
+
+Evaluate naive bayes model
+accuracy: 0.851794871795
+precision: 0.293321428571
+recall:    0.319738095238
+"""
+
 ### Task 6: Dump your classifier, dataset, and features_list so anyone can
 ### check your results. You do not need to change anything below, but make sure
 ### that the version of poi_id.py that you submit can be run on its own and
